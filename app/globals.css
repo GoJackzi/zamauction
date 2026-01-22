@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --color-zama-accent: #FFE600;
+  /* Zama's vibrant yellow */
+  --color-zama-dark: #0F0F0F;
+  --color-zama-card: #161616;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "Space Mono", monospace;
+}
+
+:root {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+
+body {
+  color: var(--foreground) !important;
+  background: #000000 !important;
+  font-family: var(--font-display), Arial, sans-serif;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: center top;
+}
+
+/* Selection color */
+::selection {
+  background: var(--color-zama-accent);
+  color: black;
+}
+
+/* Custom Utilities */
+@utility glass-card {
+  background: #0a0a0a;
+  border: 1px solid #333;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #FFE600;
+}
