@@ -113,6 +113,9 @@ export default function StrategyCalculator() {
                     <div className="text-[10px] text-gray-600 font-mono mt-1">
                         {curveData.finalizedCount}/{curveData.totalBidders} finalized (10 bids)
                     </div>
+                    <div className="text-[10px] text-gray-500 font-mono mt-1">
+                        Est Total: <span className="text-[#FFE600]">{formatVol(curveData.totalVolume || 0)}</span> / 880M ZAMA
+                    </div>
                 </div>
             </div>
 
