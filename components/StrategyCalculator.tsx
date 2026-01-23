@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Brush } from 'recharts';
 import { Target, AlertTriangle, TrendingDown, Info } from 'lucide-react';
 
@@ -20,6 +20,8 @@ export default function StrategyCalculator() {
     const [myBid, setMyBid] = useState<string>('0.05');
     const [myBudget, setMyBudget] = useState<string>('1000');
     const [loading, setLoading] = useState(true);
+    const [zoomRange, setZoomRange] = useState<[number, number]>([0, 1]); // 0-1 percentage range
+    const chartRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         fetch('/api/data')
@@ -88,6 +90,24 @@ export default function StrategyCalculator() {
     const myBidNum = parseFloat(myBid) || 0;
     const isSafe = myBidNum > curveData.clearingPrice;
 
+    // Zoom handlers
+    const maxVolume = curveData.totalVolume || AUCTION_SUPPLY;
+    const xDomain: [number, number] = [
+        zoomRange[0] * maxVolume,
+        zoomRange[1] * maxVolume
+    ];
+
+    const handleWheel = useCallback((e: React.WheelEvent) => {
+        e.preventDefault();
+        const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9; // Zoom out / in
+        const mid = (zoomRange[0] + zoomRange[1]) / 2;
+        const halfRange = (zoomRange[1] - zoomRange[0]) / 2;
+        const newHalfRange = Math.min(0.5, Math.max(0.05, halfRange * zoomFactor));
+        const newStart = Math.max(0, mid - newHalfRange);
+        const newEnd = Math.min(1, mid + newHalfRange);
+        setZoomRange([newStart, newEnd]);
+    }, [zoomRange]);
+
     // Formatting big numbers
     const formatVol = (val: number) => (val / 1_000_000).toFixed(1) + 'M';
 
@@ -95,7 +115,9 @@ export default function StrategyCalculator() {
 
     return (
         <div className="space-y-6 bg-[#0a0a0a] border border-[#333] p-6 rounded-lg">
-            <div className="flex items-center justify-between">
+            {/* Header - 3 Column Grid */}
+            <div className="grid grid-cols-3 items-center">
+                {/* Left: Title */}
                 <div>
                     <h2 className="text-xl font-bold font-display text-white flex items-center gap-2">
                         <Target className="text-[#FFE600]" />
@@ -105,16 +127,26 @@ export default function StrategyCalculator() {
                         Pessimistic Demand Curve (Top-Fill Simulation)
                     </p>
                 </div>
+
+                {/* Center: Est Total ZAMA (Big Info) */}
+                <div className="text-center">
+                    <div className="text-xs text-gray-500 font-mono uppercase">Est. Total Demand</div>
+                    <div className="text-3xl font-mono text-[#FFE600] font-bold">
+                        {formatVol(curveData.totalVolume || 0)}
+                    </div>
+                    <div className="text-sm text-gray-500 font-mono">
+                        / 880M ZAMA Supply
+                    </div>
+                </div>
+
+                {/* Right: Clearing Price */}
                 <div className="text-right">
-                    <div className="text-xs text-gray-500 font-mono">EST. CLEARING PRICE (WORST CASE)</div>
+                    <div className="text-xs text-gray-500 font-mono">EST. CLEARING PRICE</div>
                     <div className="text-2xl font-mono text-[#FFE600] font-bold">
                         ${curveData.clearingPrice?.toFixed(4) || '0.0000'}
                     </div>
                     <div className="text-[10px] text-gray-600 font-mono mt-1">
                         {curveData.finalizedCount}/{curveData.totalBidders} finalized (10 bids)
-                    </div>
-                    <div className="text-[10px] text-gray-500 font-mono mt-1">
-                        Est Total: <span className="text-[#FFE600]">{formatVol(curveData.totalVolume || 0)}</span> / 880M ZAMA
                     </div>
                 </div>
             </div>
@@ -146,7 +178,11 @@ export default function StrategyCalculator() {
             </div>
 
             {/* Chart */}
-            <div className="h-[300px] w-full">
+            <div
+                className="h-[300px] w-full cursor-crosshair"
+                ref={chartRef}
+                onWheel={handleWheel}
+            >
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={curveData.points}>
                         <defs>
@@ -159,10 +195,11 @@ export default function StrategyCalculator() {
                         <XAxis
                             dataKey="volume"
                             type="number"
-                            domain={[0, 'auto']}
+                            domain={xDomain}
                             tickFormatter={formatVol}
                             tick={{ fill: '#666', fontSize: 10 }}
                             label={{ value: 'Cumulative Volume (ZAMA)', position: 'insideBottom', offset: -5, fill: '#666', fontSize: 10 }}
+                            allowDataOverflow={true}
                         />
                         <YAxis
                             dataKey="price"
