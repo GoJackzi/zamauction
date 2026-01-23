@@ -36,9 +36,9 @@ export default function StrategyCalculator() {
     const curveData = useMemo(() => {
         if (!data.length) return { points: [], clearingPrice: 0, totalVolume: 0, maxPriceForChart: 0.15 };
 
-        // 1. Filter out extreme outlier prices (> $1 are likely errors or tests)
+        // 1. Filter only valid entries (keep all bid prices)
         const filtered = [...data]
-            .filter(u => u.netShielded > 0 && u.avgBidPrice > 0 && u.avgBidPrice < 1);
+            .filter(u => u.netShielded > 0 && u.avgBidPrice > 0);
 
         // 2. Sort by Price Descending (Top-Fill)
         const sorted = filtered.sort((a, b) => b.avgBidPrice - a.avgBidPrice);
@@ -67,8 +67,8 @@ export default function StrategyCalculator() {
             }
         }
 
-        // Calculate a sensible max for the chart (slightly above the max point price)
-        const maxPriceForChart = sorted.length > 0 ? Math.min(sorted[0].avgBidPrice * 1.2, 0.20) : 0.15;
+        // Calculate max price for the chart (slightly above the max point price)
+        const maxPriceForChart = sorted.length > 0 ? sorted[0].avgBidPrice * 1.2 : 1;
 
         return { points, clearingPrice, totalVolume: cumulativeVolume, maxPriceForChart };
     }, [data]);
@@ -148,9 +148,11 @@ export default function StrategyCalculator() {
                         />
                         <YAxis
                             dataKey="price"
-                            domain={[0, curveData.maxPriceForChart || 0.15]}
-                            tickFormatter={(val) => `$${val.toFixed(3)}`}
+                            scale="log"
+                            domain={[0.01, curveData.maxPriceForChart || 10]}
+                            tickFormatter={(val) => `$${val >= 1 ? val.toFixed(2) : val.toFixed(3)}`}
                             tick={{ fill: '#666', fontSize: 10 }}
+                            allowDataOverflow={true}
                         />
                         <Tooltip
                             contentStyle={{ backgroundColor: '#000', borderColor: '#333' }}
