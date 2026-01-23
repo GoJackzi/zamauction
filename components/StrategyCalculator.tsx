@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Brush } from 'recharts';
 import { Target, AlertTriangle, TrendingDown, Info } from 'lucide-react';
 
 type User = {
@@ -76,6 +76,11 @@ export default function StrategyCalculator() {
 
         // Count finalized bidders (10 bids = maxed out, can't change)
         const finalizedCount = filtered.filter(u => u.bidCount >= 10).length;
+
+        // If demand never reaches supply, clearing price is the lowest bid (everyone gets filled)
+        if (!foundClearing && sorted.length > 0) {
+            clearingPrice = sorted[sorted.length - 1].avgBidPrice;
+        }
 
         return { points, clearingPrice, totalVolume: cumulativeVolume, maxPriceForChart, finalizedCount, totalBidders: filtered.length };
     }, [data]);
@@ -181,6 +186,8 @@ export default function StrategyCalculator() {
                         <ReferenceLine x={AUCTION_SUPPLY} stroke="red" strokeDasharray="3 3" label={{ value: 'Supply Cap (880M)', fill: 'red', fontSize: 10, position: 'insideTopRight' }} />
                         {/* User Bid Line */}
                         <ReferenceLine y={myBidNum} stroke="#00ff00" strokeDasharray="5 5" label={{ value: 'Your Bid', fill: '#00ff00', fontSize: 10 }} />
+                        {/* Zoom Brush */}
+                        <Brush dataKey="volume" height={30} stroke="#666" fill="#111" tickFormatter={formatVol} />
                     </AreaChart>
                 </ResponsiveContainer>
             </div>
