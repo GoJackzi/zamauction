@@ -198,14 +198,20 @@ export async function GET() {
             userBids[key].push(price);
         });
 
-        // Calc Avg Price & Est Qty
+        // Calc Avg Price & Est Qty (capped at 88M ZAMA per bid)
+        const MAX_ZAMA_PER_BID = 88_000_000;
         Object.values(users).forEach((u: any) => {
             const prices = userBids[u.address.toLowerCase()] || [];
             if (prices.length > 0) {
                 const sum = prices.reduce((a, b) => a + b, 0);
                 u.avgBidPrice = sum / prices.length;
                 if (u.avgBidPrice > 0) {
-                    u.estQty = u.netShielded / u.avgBidPrice;
+                    // Raw estimate
+                    const rawEstQty = u.netShielded / u.avgBidPrice;
+                    // Cap based on max bids (10) * 88M per bid
+                    const maxBids = Math.max(1, Math.min(u.bidCount, 10));
+                    const maxAllocation = maxBids * MAX_ZAMA_PER_BID;
+                    u.estQty = Math.min(rawEstQty, maxAllocation);
                 }
             }
         });

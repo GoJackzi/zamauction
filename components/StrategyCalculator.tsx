@@ -50,9 +50,12 @@ export default function StrategyCalculator() {
         let foundClearing = false;
 
         for (const user of sorted) {
-            // Optimistic/Pessimistic: Assume they bid their FULL stack at their AVG price
-            // Volume = Balance / Price
-            const vol = user.netShielded / user.avgBidPrice;
+            // Volume = Balance / Price, capped at 88M ZAMA per bid
+            const MAX_ZAMA_PER_BID = 88_000_000;
+            const rawVol = user.netShielded / user.avgBidPrice;
+            const maxBids = Math.max(1, Math.min(user.bidCount || 1, 10));
+            const maxAllocation = maxBids * MAX_ZAMA_PER_BID;
+            const vol = Math.min(rawVol, maxAllocation);
             cumulativeVolume += vol;
 
             points.push({
