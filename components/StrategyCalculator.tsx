@@ -34,12 +34,14 @@ export default function StrategyCalculator() {
     }, []);
 
     const curveData = useMemo(() => {
-        if (!data.length) return [];
+        if (!data.length) return { points: [], clearingPrice: 0, totalVolume: 0, maxPriceForChart: 0.15 };
 
-        // 1. Sort by Price Descending (Top-Fill)
-        const sorted = [...data]
-            .filter(u => u.netShielded > 0 && u.avgBidPrice > 0)
-            .sort((a, b) => b.avgBidPrice - a.avgBidPrice);
+        // 1. Filter out extreme outlier prices (> $1 are likely errors or tests)
+        const filtered = [...data]
+            .filter(u => u.netShielded > 0 && u.avgBidPrice > 0 && u.avgBidPrice < 1);
+
+        // 2. Sort by Price Descending (Top-Fill)
+        const sorted = filtered.sort((a, b) => b.avgBidPrice - a.avgBidPrice);
 
         let cumulativeVolume = 0;
         const points = [];
@@ -65,7 +67,10 @@ export default function StrategyCalculator() {
             }
         }
 
-        return { points, clearingPrice, totalVolume: cumulativeVolume };
+        // Calculate a sensible max for the chart (slightly above the max point price)
+        const maxPriceForChart = sorted.length > 0 ? Math.min(sorted[0].avgBidPrice * 1.2, 0.20) : 0.15;
+
+        return { points, clearingPrice, totalVolume: cumulativeVolume, maxPriceForChart };
     }, [data]);
 
     const myBidNum = parseFloat(myBid) || 0;
@@ -143,7 +148,8 @@ export default function StrategyCalculator() {
                         />
                         <YAxis
                             dataKey="price"
-                            tickFormatter={(val) => `$${val}`}
+                            domain={[0, curveData.maxPriceForChart || 0.15]}
+                            tickFormatter={(val) => `$${val.toFixed(3)}`}
                             tick={{ fill: '#666', fontSize: 10 }}
                         />
                         <Tooltip
