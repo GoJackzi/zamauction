@@ -10,6 +10,7 @@ type User = {
     totalUnwrapped: number;
     netShielded: number;
     avgBidPrice: number;
+    bidCount: number;
 };
 
 const AUCTION_SUPPLY = 880_000_000; // 880M ZAMA
@@ -34,7 +35,7 @@ export default function StrategyCalculator() {
     }, []);
 
     const curveData = useMemo(() => {
-        if (!data.length) return { points: [], clearingPrice: 0, totalVolume: 0, maxPriceForChart: 0.15 };
+        if (!data.length) return { points: [], clearingPrice: 0, totalVolume: 0, maxPriceForChart: 1, finalizedCount: 0, totalBidders: 0 };
 
         // 1. Filter only valid entries (keep all bid prices)
         const filtered = [...data]
@@ -70,7 +71,10 @@ export default function StrategyCalculator() {
         // Calculate max price for the chart (slightly above the max point price)
         const maxPriceForChart = sorted.length > 0 ? sorted[0].avgBidPrice * 1.2 : 1;
 
-        return { points, clearingPrice, totalVolume: cumulativeVolume, maxPriceForChart };
+        // Count finalized bidders (10 bids = maxed out, can't change)
+        const finalizedCount = filtered.filter(u => u.bidCount >= 10).length;
+
+        return { points, clearingPrice, totalVolume: cumulativeVolume, maxPriceForChart, finalizedCount, totalBidders: filtered.length };
     }, [data]);
 
     const myBidNum = parseFloat(myBid) || 0;
@@ -96,7 +100,10 @@ export default function StrategyCalculator() {
                 <div className="text-right">
                     <div className="text-xs text-gray-500 font-mono">EST. CLEARING PRICE (WORST CASE)</div>
                     <div className="text-2xl font-mono text-[#FFE600] font-bold">
-                        ${curveData.clearingPrice.toFixed(4)}
+                        ${curveData.clearingPrice?.toFixed(4) || '0.0000'}
+                    </div>
+                    <div className="text-[10px] text-gray-600 font-mono mt-1">
+                        {curveData.finalizedCount}/{curveData.totalBidders} finalized (10 bids)
                     </div>
                 </div>
             </div>
