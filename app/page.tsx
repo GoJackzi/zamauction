@@ -1,4 +1,5 @@
 import PublicAuctionTable from '@/components/PublicAuctionTable';
+import StrategyCalculator from '@/components/StrategyCalculator';
 
 export default function Home() {
   return (
@@ -22,6 +23,9 @@ export default function Home() {
             </p>
           </div>
         </header>
+
+        {/* Strategy Section */}
+        <StrategyCalculator />
 
         {/* Main Table */}
         <PublicAuctionTable />
