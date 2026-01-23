@@ -97,16 +97,19 @@ export default function StrategyCalculator() {
         zoomRange[1] * maxVolume
     ];
 
-    const handleWheel = useCallback((e: React.WheelEvent) => {
-        e.preventDefault();
-        const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9; // Zoom out / in
+    const handleZoom = (direction: 'in' | 'out' | 'reset') => {
+        if (direction === 'reset') {
+            setZoomRange([0, 1]);
+            return;
+        }
+        const zoomFactor = direction === 'out' ? 1.2 : 0.8;
         const mid = (zoomRange[0] + zoomRange[1]) / 2;
         const halfRange = (zoomRange[1] - zoomRange[0]) / 2;
         const newHalfRange = Math.min(0.5, Math.max(0.05, halfRange * zoomFactor));
         const newStart = Math.max(0, mid - newHalfRange);
         const newEnd = Math.min(1, mid + newHalfRange);
         setZoomRange([newStart, newEnd]);
-    }, [zoomRange]);
+    };
 
     // Formatting big numbers
     const formatVol = (val: number) => (val / 1_000_000).toFixed(1) + 'M';
@@ -178,58 +181,74 @@ export default function StrategyCalculator() {
             </div>
 
             {/* Chart */}
-            <div
-                className="h-[300px] w-full cursor-crosshair"
-                ref={chartRef}
-                onWheel={handleWheel}
-            >
-                <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={curveData.points}>
-                        <defs>
-                            <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#FFE600" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="#FFE600" stopOpacity={0} />
-                            </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                        <XAxis
-                            dataKey="volume"
-                            type="number"
-                            domain={xDomain}
-                            tickFormatter={formatVol}
-                            tick={{ fill: '#666', fontSize: 10 }}
-                            label={{ value: 'Cumulative Volume (ZAMA)', position: 'insideBottom', offset: -5, fill: '#666', fontSize: 10 }}
-                            allowDataOverflow={true}
-                        />
-                        <YAxis
-                            dataKey="price"
-                            scale="log"
-                            domain={[0.01, curveData.maxPriceForChart || 10]}
-                            tickFormatter={(val) => `$${val >= 1 ? val.toFixed(2) : val.toFixed(3)}`}
-                            tick={{ fill: '#666', fontSize: 10 }}
-                            allowDataOverflow={true}
-                        />
-                        <Tooltip
-                            contentStyle={{ backgroundColor: '#000', borderColor: '#333' }}
-                            itemStyle={{ color: '#FFE600' }}
-                            labelFormatter={(val) => `Vol: ${formatVol(val)}`}
-                            formatter={(val: number) => [`$${val.toFixed(4)}`, 'Bid Price']}
-                        />
-                        <Area
-                            type="monotone"
-                            dataKey="price"
-                            stroke="#FFE600"
-                            fillOpacity={1}
-                            fill="url(#colorPrice)"
-                        />
-                        {/* Clearing Price Line */}
-                        <ReferenceLine x={AUCTION_SUPPLY} stroke="red" strokeDasharray="3 3" label={{ value: 'Supply Cap (880M)', fill: 'red', fontSize: 10, position: 'insideTopRight' }} />
-                        {/* User Bid Line */}
-                        <ReferenceLine y={myBidNum} stroke="#00ff00" strokeDasharray="5 5" label={{ value: 'Your Bid', fill: '#00ff00', fontSize: 10 }} />
-                        {/* Zoom Brush */}
-                        <Brush dataKey="volume" height={30} stroke="#666" fill="#111" tickFormatter={formatVol} />
-                    </AreaChart>
-                </ResponsiveContainer>
+            <div className="relative">
+                {/* Zoom Controls */}
+                <div className="absolute top-2 right-2 z-10 flex gap-1">
+                    <button
+                        onClick={() => handleZoom('in')}
+                        className="w-8 h-8 bg-[#222] hover:bg-[#333] border border-[#444] text-white font-mono text-lg rounded flex items-center justify-center"
+                    >+</button>
+                    <button
+                        onClick={() => handleZoom('out')}
+                        className="w-8 h-8 bg-[#222] hover:bg-[#333] border border-[#444] text-white font-mono text-lg rounded flex items-center justify-center"
+                    >−</button>
+                    <button
+                        onClick={() => handleZoom('reset')}
+                        className="px-2 h-8 bg-[#222] hover:bg-[#333] border border-[#444] text-gray-400 font-mono text-[10px] rounded flex items-center justify-center"
+                    >RESET</button>
+                </div>
+                <div
+                    className="h-[300px] w-full"
+                    ref={chartRef}
+                >
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={curveData.points}>
+                            <defs>
+                                <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#FFE600" stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor="#FFE600" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                            <XAxis
+                                dataKey="volume"
+                                type="number"
+                                domain={xDomain}
+                                tickFormatter={formatVol}
+                                tick={{ fill: '#666', fontSize: 10 }}
+                                label={{ value: 'Cumulative Volume (ZAMA)', position: 'insideBottom', offset: -5, fill: '#666', fontSize: 10 }}
+                                allowDataOverflow={true}
+                            />
+                            <YAxis
+                                dataKey="price"
+                                scale="log"
+                                domain={[0.01, curveData.maxPriceForChart || 10]}
+                                tickFormatter={(val) => `$${val >= 1 ? val.toFixed(2) : val.toFixed(3)}`}
+                                tick={{ fill: '#666', fontSize: 10 }}
+                                allowDataOverflow={true}
+                            />
+                            <Tooltip
+                                contentStyle={{ backgroundColor: '#000', borderColor: '#333' }}
+                                itemStyle={{ color: '#FFE600' }}
+                                labelFormatter={(val) => `Vol: ${formatVol(val)}`}
+                                formatter={(val: number) => [`$${val.toFixed(4)}`, 'Bid Price']}
+                            />
+                            <Area
+                                type="monotone"
+                                dataKey="price"
+                                stroke="#FFE600"
+                                fillOpacity={1}
+                                fill="url(#colorPrice)"
+                            />
+                            {/* Clearing Price Line */}
+                            <ReferenceLine x={AUCTION_SUPPLY} stroke="red" strokeDasharray="3 3" label={{ value: 'Supply Cap (880M)', fill: 'red', fontSize: 10, position: 'insideTopRight' }} />
+                            {/* User Bid Line */}
+                            <ReferenceLine y={myBidNum} stroke="#00ff00" strokeDasharray="5 5" label={{ value: 'Your Bid', fill: '#00ff00', fontSize: 10 }} />
+                            {/* Zoom Brush */}
+                            <Brush dataKey="volume" height={30} stroke="#666" fill="#111" tickFormatter={formatVol} />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </div>
             </div>
 
             <div className="text-[10px] text-gray-600 font-mono leading-relaxed">
