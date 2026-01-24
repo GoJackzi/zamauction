@@ -138,9 +138,6 @@ export default function StrategyCalculator({ data, loading }: StrategyCalculator
                     <div className="text-2xl font-mono text-[#FFE600] font-bold">
                         ${curveData.clearingPrice?.toFixed(4) || '0.0000'}
                     </div>
-                    <div className="text-[10px] text-gray-600 font-mono mt-1">
-                        {curveData.finalizedCount}/{curveData.totalBidders} finalized (10 bids)
-                    </div>
                 </div>
             </div>
 
