@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Brush } from 'recharts';
-import { Target, AlertTriangle, TrendingDown, Info } from 'lucide-react';
+import { Target, AlertTriangle } from 'lucide-react';
 
 type User = {
     address: string;
@@ -13,28 +13,18 @@ type User = {
     bidCount: number;
 };
 
+interface StrategyCalculatorProps {
+    data: User[];
+    loading: boolean;
+}
+
 const AUCTION_SUPPLY = 880_000_000; // 880M ZAMA
 
-export default function StrategyCalculator() {
-    const [data, setData] = useState<User[]>([]);
+export default function StrategyCalculator({ data, loading }: StrategyCalculatorProps) {
     const [myBid, setMyBid] = useState<string>('0.05');
     const [myBudget, setMyBudget] = useState<string>('1000');
-    const [loading, setLoading] = useState(true);
     const [zoomRange, setZoomRange] = useState<[number, number]>([0, 1]); // 0-1 percentage range
     const chartRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        fetch('/api/data')
-            .then(res => res.json())
-            .then(json => {
-                setData(json.users || []);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error("Failed to fetch data", err);
-                setLoading(false);
-            });
-    }, []);
 
     const curveData = useMemo(() => {
         if (!data.length) return { points: [], clearingPrice: 0, totalVolume: 0, maxPriceForChart: 1, finalizedCount: 0, totalBidders: 0 };

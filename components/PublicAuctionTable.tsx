@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
-import { Loader2, ArrowUpRight, ChevronLeft, ChevronRight, Search, ArrowUpDown, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { Loader2, ArrowUpRight, ChevronLeft, ChevronRight, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface UserStats {
     address: string;
@@ -21,11 +21,16 @@ interface SummaryStats {
     canceledBids: number;
 }
 
+interface PublicAuctionTableProps {
+    data: UserStats[];
+    summary: SummaryStats | null;
+    loading: boolean;
+}
+
 type SortKey = keyof UserStats;
 type SortDir = 'asc' | 'desc';
 
 const ROWS_PER_PAGE = 15;
-const REFRESH_INTERVAL = 60; // seconds
 
 const columns: { key: SortKey; label: string; align: 'left' | 'right' | 'center'; tooltip?: string }[] = [
     { key: 'address', label: 'USER', align: 'left' },
@@ -37,60 +42,11 @@ const columns: { key: SortKey; label: string; align: 'left' | 'right' | 'center'
     { key: 'estQty', label: 'EST $ZAMA', align: 'right' },
 ];
 
-export default function PublicAuctionTable() {
-    const [data, setData] = useState<UserStats[]>([]);
-    const [summary, setSummary] = useState<SummaryStats | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+export default function PublicAuctionTable({ data, summary, loading }: PublicAuctionTableProps) {
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState('');
     const [sortKey, setSortKey] = useState<SortKey>('netShielded');
     const [sortDir, setSortDir] = useState<SortDir>('desc');
-
-    const [refreshing, setRefreshing] = useState(false);
-
-    const fetchData = useCallback(async (showRefreshing = false) => {
-        if (showRefreshing) setRefreshing(true);
-        try {
-            const res = await fetch('/api/data');
-            if (!res.ok) throw new Error('Failed to fetch');
-            const json = await res.json();
-            setData(json.users || []);
-            setSummary(json.summary || null);
-            setSummary(json.summary || null);
-            setError(null);
-        } catch (err) {
-            setError('Failed to load data');
-        } finally {
-            setLoading(false);
-            setRefreshing(false);
-        }
-    }, []);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
-
-    // Manual refresh for summary stats
-    const [summaryRefreshing, setSummaryRefreshing] = useState(false);
-    const refreshSummary = async () => {
-        setSummaryRefreshing(true);
-        try {
-            const res = await fetch('/api/data');
-            if (res.ok) {
-                const json = await res.json();
-                setSummary(json.summary || null);
-            }
-        } catch (err) {
-            // Silent fail
-        } finally {
-            setSummaryRefreshing(false);
-        }
-    };
-
-    // Auto-refresh removed per user request - manual page refresh only
-
-
 
     const handleSort = (key: SortKey) => {
         if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
