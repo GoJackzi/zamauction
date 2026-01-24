@@ -75,7 +75,6 @@ export default function PublicAuctionTable({ data, summary, loading }: PublicAuc
     };
 
     if (loading) return <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-[#FFE600]" /></div>;
-    if (error) return <div className="flex h-64 items-center justify-center text-red-500 font-mono text-sm">{error}</div>;
 
     return (
         <div className="space-y-6">
@@ -92,10 +91,6 @@ export default function PublicAuctionTable({ data, summary, loading }: PublicAuc
                 <div className="border border-[#333] bg-[#0a0a0a] p-4">
                     <div className="flex items-center justify-between mb-3">
                         <div className="text-xs text-gray-500 uppercase tracking-wider font-mono">Public Auction Summary</div>
-                        <button onClick={refreshSummary} className="flex items-center gap-1 text-xs text-gray-500 hover:text-[#FFE600] transition-colors" title="Refresh data">
-                            <RefreshCw className={`h-3 w-3 ${summaryRefreshing ? 'animate-spin text-[#FFE600]' : ''}`} />
-                            <span>Refresh</span>
-                        </button>
                     </div>
                     <div className="grid grid-cols-5 gap-6">
                         <div>

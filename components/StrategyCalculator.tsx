@@ -191,53 +191,59 @@ export default function StrategyCalculator({ data, loading }: StrategyCalculator
                     className="h-[300px] w-full"
                     ref={chartRef}
                 >
-                    <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={curveData.points}>
-                            <defs>
-                                <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#FFE600" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#FFE600" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                            <XAxis
-                                dataKey="volume"
-                                type="number"
-                                domain={xDomain}
-                                tickFormatter={formatVol}
-                                tick={{ fill: '#666', fontSize: 10 }}
-                                label={{ value: 'Cumulative Volume (ZAMA)', position: 'insideBottom', offset: -5, fill: '#666', fontSize: 10 }}
-                                allowDataOverflow={true}
-                            />
-                            <YAxis
-                                dataKey="price"
-                                scale="log"
-                                domain={[0.01, curveData.maxPriceForChart || 10]}
-                                tickFormatter={(val) => `$${val >= 1 ? val.toFixed(2) : val.toFixed(3)}`}
-                                tick={{ fill: '#666', fontSize: 10 }}
-                                allowDataOverflow={true}
-                            />
-                            <Tooltip
-                                contentStyle={{ backgroundColor: '#000', borderColor: '#333' }}
-                                itemStyle={{ color: '#FFE600' }}
-                                labelFormatter={(val) => `Vol: ${formatVol(val)}`}
-                                formatter={(val: number) => [`$${val.toFixed(4)}`, 'Bid Price']}
-                            />
-                            <Area
-                                type="monotone"
-                                dataKey="price"
-                                stroke="#FFE600"
-                                fillOpacity={1}
-                                fill="url(#colorPrice)"
-                            />
-                            {/* Clearing Price Line */}
-                            <ReferenceLine x={AUCTION_SUPPLY} stroke="red" strokeDasharray="3 3" label={{ value: 'Supply Cap (880M)', fill: 'red', fontSize: 10, position: 'insideTopRight' }} />
-                            {/* User Bid Line */}
-                            <ReferenceLine y={myBidNum} stroke="#00ff00" strokeDasharray="5 5" label={{ value: 'Your Bid', fill: '#00ff00', fontSize: 10 }} />
-                            {/* Zoom Brush */}
-                            <Brush dataKey="volume" height={30} stroke="#666" fill="#111" tickFormatter={formatVol} />
-                        </AreaChart>
-                    </ResponsiveContainer>
+                    {curveData.points.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={curveData.points}>
+                                <defs>
+                                    <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#FFE600" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#FFE600" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                                <XAxis
+                                    dataKey="volume"
+                                    type="number"
+                                    domain={xDomain}
+                                    tickFormatter={formatVol}
+                                    tick={{ fill: '#666', fontSize: 10 }}
+                                    label={{ value: 'Cumulative Volume (ZAMA)', position: 'insideBottom', offset: -5, fill: '#666', fontSize: 10 }}
+                                    allowDataOverflow={true}
+                                />
+                                <YAxis
+                                    dataKey="price"
+                                    scale="log"
+                                    domain={[0.01, curveData.maxPriceForChart || 10]}
+                                    tickFormatter={(val) => `$${val >= 1 ? val.toFixed(2) : val.toFixed(3)}`}
+                                    tick={{ fill: '#666', fontSize: 10 }}
+                                    allowDataOverflow={true}
+                                />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#000', borderColor: '#333' }}
+                                    itemStyle={{ color: '#FFE600' }}
+                                    labelFormatter={(val) => `Vol: ${formatVol(val)}`}
+                                    formatter={(val: number) => [`$${val.toFixed(4)}`, 'Bid Price']}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="price"
+                                    stroke="#FFE600"
+                                    fillOpacity={1}
+                                    fill="url(#colorPrice)"
+                                />
+                                {/* Clearing Price Line */}
+                                <ReferenceLine x={AUCTION_SUPPLY} stroke="red" strokeDasharray="3 3" label={{ value: 'Supply Cap (880M)', fill: 'red', fontSize: 10, position: 'insideTopRight' }} />
+                                {/* User Bid Line */}
+                                <ReferenceLine y={myBidNum} stroke="#00ff00" strokeDasharray="5 5" label={{ value: 'Your Bid', fill: '#00ff00', fontSize: 10 }} />
+                                {/* Zoom Brush */}
+                                <Brush dataKey="volume" height={30} stroke="#666" fill="#111" tickFormatter={formatVol} />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="h-full flex items-center justify-center text-gray-500 font-mono text-sm">
+                            No bid data available for chart
+                        </div>
+                    )}
                 </div>
             </div>
 
