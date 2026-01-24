@@ -60,6 +60,11 @@ export default function StrategyCalculator({ data, loading }: StrategyCalculator
             if (!foundClearing && cumulativeVolume >= AUCTION_SUPPLY) {
                 clearingPrice = user.avgBidPrice;
                 foundClearing = true;
+                console.log('Clearing found at:', {
+                    price: clearingPrice,
+                    cumulativeVolume,
+                    address: user.address.slice(0, 10) + '...'
+                });
             }
         }
 
@@ -72,7 +77,20 @@ export default function StrategyCalculator({ data, loading }: StrategyCalculator
         // If demand never reaches supply, clearing price is the lowest bid (everyone gets filled)
         if (!foundClearing && sorted.length > 0) {
             clearingPrice = sorted[sorted.length - 1].avgBidPrice;
+            console.log('Using fallback clearing (demand < supply):', {
+                clearingPrice,
+                totalVolume: cumulativeVolume,
+                supply: AUCTION_SUPPLY
+            });
         }
+
+        console.log('CurveData summary:', {
+            totalVolume: cumulativeVolume,
+            clearingPrice,
+            pointsCount: points.length,
+            highestBid: sorted[0]?.avgBidPrice,
+            lowestBid: sorted[sorted.length - 1]?.avgBidPrice
+        });
 
         return { points, clearingPrice, totalVolume: cumulativeVolume, maxPriceForChart, finalizedCount, totalBidders: filtered.length };
     }, [data]);
