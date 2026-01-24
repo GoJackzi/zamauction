@@ -113,29 +113,43 @@ async function fetchLogs(address: string, topic0: string, topic1?: string, topic
     return allLogs;
 }
 
+// --- In-Memory Cache ---
+let cachedData: any = null;
+let cacheTimestamp: number = 0;
+const CACHE_TTL = 60 * 1000; // 60 seconds
+
 export async function GET() {
     try {
+        // Check cache
+        const now = Date.now();
+        if (cachedData && (now - cacheTimestamp) < CACHE_TTL) {
+            console.log('Serving from cache (age:', Math.round((now - cacheTimestamp) / 1000), 's)');
+            return NextResponse.json(cachedData, {
+                headers: {
+                    'Cache-Control': 'public, max-age=30',
+                    'X-Cache': 'HIT',
+                    'X-Cache-Age': String(Math.round((now - cacheTimestamp) / 1000)),
+                }
+            });
+        }
+
+        console.log('Cache miss - fetching fresh data...');
         const wrapperPadded = padAddress(WRAPPER_CONTRACT);
 
-        // 1. Fetch Deposits (USDT -> Wrapper)
-        console.log('Fetching deposits...');
-        const deposits = await fetchLogs(USDT_CONTRACT, TRANSFER_TOPIC, undefined, wrapperPadded);
-        console.log('Deposits count:', deposits.length);
+        // Parallel fetch: Deposits + Withdrawals together, Bids + Canceled together
+        console.log('Fetching deposits and withdrawals in parallel...');
+        const [deposits, withdrawals] = await Promise.all([
+            fetchLogs(USDT_CONTRACT, TRANSFER_TOPIC, undefined, wrapperPadded),
+            fetchLogs(USDT_CONTRACT, TRANSFER_TOPIC, wrapperPadded, undefined),
+        ]);
+        console.log('Deposits:', deposits.length, 'Withdrawals:', withdrawals.length);
 
-        // 2. Fetch Withdrawals (Wrapper -> User)
-        console.log('Fetching withdrawals...');
-        const withdrawals = await fetchLogs(USDT_CONTRACT, TRANSFER_TOPIC, wrapperPadded, undefined);
-        console.log('Withdrawals count:', withdrawals.length);
-
-        // 3. Fetch Bids
-        console.log('Fetching bids...');
-        const bids = await fetchLogs(AUCTION_CONTRACT, BID_SUBMITTED_TOPIC);
-        console.log('Bids count:', bids.length);
-
-        // 4. Fetch Canceled Bids
-        console.log('Fetching canceled bids...');
-        const canceledBids = await fetchLogs(AUCTION_CONTRACT, BID_CANCELED_TOPIC);
-        console.log('Canceled bids count:', canceledBids.length);
+        console.log('Fetching bids and canceled bids in parallel...');
+        const [bids, canceledBids] = await Promise.all([
+            fetchLogs(AUCTION_CONTRACT, BID_SUBMITTED_TOPIC),
+            fetchLogs(AUCTION_CONTRACT, BID_CANCELED_TOPIC),
+        ]);
+        console.log('Bids:', bids.length, 'Canceled:', canceledBids.length);
 
         const canceledBidIds = new Set(canceledBids.map((log: any) => log.topics?.[1]));
 
@@ -246,9 +260,30 @@ export async function GET() {
         console.log('Total users:', result.length);
         console.log('Summary:', summary);
 
-        return NextResponse.json({ users: result, summary });
+        // Update cache
+        const responseData = { users: result, summary };
+        cachedData = responseData;
+        cacheTimestamp = Date.now();
+        console.log('Cache updated at', new Date(cacheTimestamp).toISOString());
+
+        return NextResponse.json(responseData, {
+            headers: {
+                'Cache-Control': 'public, max-age=30',
+                'X-Cache': 'MISS',
+            }
+        });
     } catch (error) {
         console.error('API Error:', error);
+        // If fetch fails but we have stale cache, serve it
+        if (cachedData) {
+            console.log('Serving stale cache due to error');
+            return NextResponse.json(cachedData, {
+                headers: {
+                    'Cache-Control': 'public, max-age=30',
+                    'X-Cache': 'STALE',
+                }
+            });
+        }
         return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
     }
 }
