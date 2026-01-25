@@ -173,23 +173,50 @@ export async function GET() {
         };
 
         // Process Deposits
-        deposits.forEach((log: any) => {
+        console.log('Processing', deposits.length, 'deposit events...');
+        let depositTotal = 0;
+        let depositProcessed = 0;
+        deposits.forEach((log: any, idx: number) => {
             if (!log.topics?.[1]) return;
             const user = getUser(decodeAddress(log.topics[1]));
             const amount = Number(BigInt(log.data)) / 1e6;
             user.totalDeposited += amount;
             user.netShielded += amount;
             user.depositCount++;
+            depositTotal += amount;
+            depositProcessed++;
+            // Log first few deposits
+            if (idx < 3) {
+                console.log(`Deposit ${idx + 1}:`, {
+                    from: decodeAddress(log.topics[1]).slice(0, 10) + '...',
+                    amount: amount.toFixed(2),
+                    data: log.data.slice(0, 20) + '...'
+                });
+            }
         });
+        console.log('Deposit summary:', { processed: depositProcessed, totalUSDT: depositTotal.toFixed(2) });
 
         // Process Withdrawals
-        withdrawals.forEach((log: any) => {
+        console.log('Processing', withdrawals.length, 'withdrawal events...');
+        let withdrawalTotal = 0;
+        let withdrawalProcessed = 0;
+        withdrawals.forEach((log: any, idx: number) => {
             if (!log.topics?.[2]) return;
             const user = getUser(decodeAddress(log.topics[2]));
             const amount = Number(BigInt(log.data)) / 1e6;
             user.totalUnwrapped += amount;
             user.netShielded -= amount;
+            withdrawalTotal += amount;
+            withdrawalProcessed++;
+            // Log first few withdrawals
+            if (idx < 3) {
+                console.log(`Withdrawal ${idx + 1}:`, {
+                    to: decodeAddress(log.topics[2]).slice(0, 10) + '...',
+                    amount: amount.toFixed(2)
+                });
+            }
         });
+        console.log('Withdrawal summary:', { processed: withdrawalProcessed, totalUSDT: withdrawalTotal.toFixed(2) });
 
         // Process Bids
         const userBids: Record<string, number[]> = {};
