@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import PublicAuctionTable from '@/components/PublicAuctionTable';
-import StrategyCalculator from '@/components/StrategyCalculator';
 import { RefreshCw } from 'lucide-react';
 
 interface UserStats {
@@ -89,9 +88,6 @@ export default function Home() {
             </p>
           </div>
         </header>
-
-        {/* Strategy Section - pass data as prop */}
-        <StrategyCalculator data={data} loading={loading} />
 
         {/* Main Table - pass data as prop */}
         <PublicAuctionTable
