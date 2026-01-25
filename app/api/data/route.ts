@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const ETHERSCAN_API_KEY = 'B8J9RJFF5P2JC446HQZ1KKBK6D5G87QB4Z';
+const ETHERSCAN_API_KEY = 'VDDU4PBU4ZG3EMENBYDUFD1H3J48ABIKAC';
 // Etherscan V2 API endpoint for Ethereum mainnet
 const BASE_URL = 'https://api.etherscan.io/v2/api';
 
