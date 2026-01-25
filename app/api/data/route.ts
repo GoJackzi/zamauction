@@ -194,9 +194,20 @@ export async function GET() {
         // Process Bids
         const userBids: Record<string, number[]> = {};
 
-        bids.forEach((log: any) => {
-            if (!log.topics?.[1] || !log.topics?.[2]) return;
-            if (canceledBidIds.has(log.topics[1])) return;
+        console.log('Processing', bids.length, 'bid events...');
+        let processedBids = 0;
+        let skippedCanceled = 0;
+        let skippedMissingTopics = 0;
+
+        bids.forEach((log: any, idx: number) => {
+            if (!log.topics?.[1] || !log.topics?.[2]) {
+                skippedMissingTopics++;
+                return;
+            }
+            if (canceledBidIds.has(log.topics[1])) {
+                skippedCanceled++;
+                return;
+            }
 
             const bidder = decodeAddress(log.topics[2]);
             const user = getUser(bidder);
@@ -205,11 +216,29 @@ export async function GET() {
             const priceHex = '0x' + log.data.slice(66, 130);
             const price = Number(BigInt(priceHex)) / 1e6;
 
+            // Log first 5 bids for debugging
+            if (idx < 5) {
+                console.log(`Bid ${idx + 1}:`, {
+                    bidder: bidder.slice(0, 10) + '...',
+                    price: price.toFixed(4),
+                    bidId: log.topics[1].slice(0, 10) + '...'
+                });
+            }
+
             user.bidCount++;
+            processedBids++;
 
             const key = bidder.toLowerCase();
             if (!userBids[key]) userBids[key] = [];
             userBids[key].push(price);
+        });
+
+        console.log('Bid processing summary:', {
+            total: bids.length,
+            processed: processedBids,
+            skippedCanceled,
+            skippedMissingTopics,
+            uniqueBidders: Object.keys(userBids).length
         });
 
         // Calc Avg Price & Est Qty (capped at 88M ZAMA per bid)
